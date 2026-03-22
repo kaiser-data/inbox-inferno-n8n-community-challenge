@@ -1,0 +1,617 @@
+{
+  "name": "Inbox Inferno - Email Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbox-inferno",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "inbox-inferno"
+    },
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+      "name": "Evaluation Trigger",
+      "type": "n8n-nodes-base.evaluationTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "from",
+              "value": "={{ $json.body.from }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "subject",
+              "value": "={{ $json.body.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "body",
+              "value": "={{ $json.body.body }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "isEvaluation",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "p5",
+              "name": "expected_category",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+      "name": "Set - Prod Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "from",
+              "value": "={{ $json.input.from }}",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "subject",
+              "value": "={{ $json.input.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "body",
+              "value": "={{ $json.input.body }}",
+              "type": "string"
+            },
+            {
+              "id": "e4",
+              "name": "isEvaluation",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "e5",
+              "name": "expected_category",
+              "value": "={{ $json.expectedOutput.expected_category }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+      "name": "Set - Eval Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const from = $json.from || '';\nconst subject = $json.subject || '';\nconst body = $json.body || '';\n\nconst userMessage = `CATEGORY DEFINITIONS:\n- setup: Technical help - connections, authentication errors, sync issues, field mapping, OAuth, API tokens\n- security: Compliance/security - encryption, HIPAA, SOC2, GDPR, ISO27001, data storage, penetration tests, BAA\n- pricing: Plan costs - comparing plans, discounts, API limits, overage, upgrades, trial, nonprofit rates\n- hr: Job applications, internship inquiries, career questions\n- escalate_sales: Enterprise pricing, partnerships, reseller deals, contract renewals\n- escalate_finance: Billing disputes, invoice requests, payment failures, refunds\n- escalate_legal: DPA requests, GDPR compliance docs, legal contracts\n- spam: Recruiting spam, irrelevant marketing\n- misdirected: Email for a different company or wrong recipient\n\nEXAMPLES:\nFrom: j@acme.com | Subject: Salesforce auth error | Body: Getting Authentication Failed. -> {\"category\":\"setup\"}\nFrom: h@hospital.org | Subject: HIPAA | Body: Do you offer a BAA? -> {\"category\":\"security\"}\nFrom: l@co.io | Subject: Pricing | Body: Difference between Professional and Enterprise? -> {\"category\":\"pricing\"}\nFrom: j@corp.com | Subject: Enterprise deal | Body: 50+ integrations, reseller arrangement. -> {\"category\":\"escalate_sales\"}\nFrom: f@co.com | Subject: Invoice March | Body: Need invoice for March subscription. -> {\"category\":\"escalate_finance\"}\nFrom: l@co.com | Subject: DPA request | Body: Need Data Processing Agreement for GDPR. -> {\"category\":\"escalate_legal\"}\nFrom: r@staff.com | Subject: Top engineers | Body: I have candidates for your engineering team. -> {\"category\":\"spam\"}\nFrom: c@pizza.com | Subject: Order late | Body: My pizza hasn't arrived. -> {\"category\":\"misdirected\"}\nFrom: s@co.com | Subject: Job application | Body: Applying for software engineer role. -> {\"category\":\"hr\"}\n\nRULES: partnership/enterprise/reseller -> escalate_sales NOT pricing | legal doc/DPA -> escalate_legal NOT security | billing/invoice -> escalate_finance NOT pricing\n\nEmail to classify:\nFrom: ${from}\nSubject: ${subject}\nBody:\n${body}\n\nRespond ONLY with valid JSON: {\"category\":\"category_name\"}`;\n\nreturn { json: { ...$json, userMessage } };"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+      "name": "Build Classify Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+      "name": "Classify Email",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-opus-4-6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0,
+          "maxTokensToSample": 256
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+      "name": "Claude - Classify",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        360
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "oRm3uluDgjQ19V1D",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $json.text || $json.output || '';\nconst prevData = $('Build Classify Prompt').item.json;\n\nconst VALID = ['setup','security','pricing','hr','escalate_sales','escalate_support','escalate_finance','escalate_legal','spam','misdirected'];\n\nlet category = null;\ntry {\n  const cleaned = responseText.replace(/```json\\n?/gi, '').replace(/```\\n?/gi, '').trim();\n  const parsed = JSON.parse(cleaned);\n  category = parsed.category || null;\n} catch (e) {\n  const match = responseText.match(/\"category\"\\s*:\\s*\"([^\"]+)\"/);\n  if (match) category = match[1];\n}\n\nif (category) category = category.toLowerCase().trim();\nif (!category || !VALID.includes(category)) category = 'escalate_support';\n\nreturn {\n  json: {\n    from: prevData.from,\n    subject: prevData.subject,\n    body: prevData.body,\n    isEvaluation: prevData.isEvaluation,\n    expected_category: prevData.expected_category || '',\n    category\n  }\n};"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
+      "name": "Parse Category",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const category = $json.category || 'escalate_support';\nconst from = $json.from || '';\nconst subject = $json.subject || '';\nconst body = $json.body || '';\n\nconst NEXUS_DOCS = `## WHAT NEXUS INTEGRATIONS DOES\nNexus Integrations connects business tools so data flows automatically. When a customer is added in your CRM, it appears in email marketing, accounting, and help desk \u2014 no manual entry.\nUse cases: Sync contacts between CRM and email marketing. Auto-create invoices when payments are received. Push support tickets when integrations fail. Aggregate data for reporting.\nWebsite: nexusintegrations.com | Docs: docs.nexusintegrations.com/quickstart\nNo setup fee. Upgrade mid-month with prorated billing. Annual billing saves ~17-19%.\nNonprofit discount: 25% off (requires 501c3 docs, annual billing). Education: 30% off (annual billing).\n\n## PRICING PLANS\n\nSTARTER \u2014 $299/mo ($249/mo annual, save ~17%)\nIdeal for: Small teams getting started\nIntegrations: Max 3 | API calls: 10,000/mo | Overage: $25/1K\nSync: Scheduled only | Connectors: Standard tier\nWebhooks: Basic | Field mapping: Standard | SSO: No | IP whitelisting: No\nSupport: Email, 48h response\nOnboarding: Community access\nTrial: 14 days free | Cancel anytime | Payment: Credit card\n\nPROFESSIONAL \u2014 $799/mo ($649/mo annual, save ~19%)\nIdeal for: Growing businesses with multiple integrations\nIntegrations: Max 10 | API calls: 50,000/mo | Overage: $20/1K\nSync: Real-time webhooks (<5 min) | Connectors: Standard + Premium\nWebhooks: Advanced with retry logic | Field mapping: Custom | SSO: No | IP whitelisting: No\nSupport: Email + Phone, 24h response\nOnboarding: Dedicated 2h session + Quarterly business reviews\nTrial: 14 days free | Cancel anytime | Payment: Credit card\n\nENTERPRISE \u2014 Custom pricing ($2,500+/mo)\nIdeal for: Large orgs with complex needs\nIntegrations: Unlimited | API calls: Custom (250K+) | Overage: Custom\nSync: Real-time webhooks (<30 sec) | Connectors: All tiers including Enterprise-exclusive\nWebhooks: Advanced with retry | Field mapping: Custom | SSO: Yes (SAML 2.0) | IP whitelisting: Yes\nAudit logs: Comprehensive | Dedicated account manager: Yes | Custom connectors: 2/year\nSupport: 24/7 Premium, 4h response\nOnboarding: White-glove onboarding + technical account management\nTrial: Contact sales | Contract: 12 months typical | Payment: Credit card, ACH, Wire transfer\nData residency: EU (Frankfurt) or APAC (Singapore) available\nHIPAA compliance + BAA available | Enterprise SLA configurable\n\nALL PLANS: 14-day free trial, cancel anytime (Starter/Pro), US-East (Virginia) + US-West (Oregon) default\n\n## CONNECTORS\n\nSTANDARD (Starter+):\nCRM: Salesforce, HubSpot, Zoho CRM\nEmail Marketing: Mailchimp, Constant Contact, SendGrid\nAccounting: QuickBooks Online, Xero\nPayments: Stripe, PayPal\nCommunication: Slack, Microsoft Teams\nProductivity: Google Workspace, Microsoft 365\n\nPREMIUM (Professional+):\nCRM: Microsoft Dynamics 365, SAP Sales Cloud\nEmail Marketing: Marketo, Pardot, Adobe Campaign\nAccounting/ERP: Oracle NetSuite, SAP S/4HANA\nHelp Desk: Zendesk, Freshdesk\nHR: Workday, BambooHR, ADP\n\nENTERPRISE-ONLY:\nLegacy: SOAP/XML Integrations\nDatabases: PostgreSQL, MySQL, SQL Server (direct connectors)\nCustom: Custom-built connectors\n\nFull connector list: docs.nexusintegrations.com/connectors\n\n## SYNC & SETUP\n\nHow sync works:\n1. Authenticate both systems (OAuth or API key)\n2. Choose data to sync and frequency\n3. Map fields between systems\n4. Data flows automatically\n\nSync speeds by plan:\n- Starter: Scheduled (15min to hourly minimum) \u2014 best for less urgent data\n- Professional: Real-time via webhooks, <5 min \u2014 best for time-sensitive data\n- Enterprise: Real-time via webhooks, <30 sec \u2014 near-instant\n\nAuthentication troubleshooting:\n- Use admin credentials with API access enabled\n- Salesforce: Setup > User Profiles > enable API access; create Connected App with OAuth 2.0\n- OAuth errors: clear browser cookies and retry; check org security settings for 3rd-party access\n- Still failing: contact support@nexusintegrations.com with error message\n\nCustom fields missing: Settings > Integrations > [integration name] > Refresh Fields\nAlso check field-level security in source system.\n\nAPI limits: Check current usage in Settings > API Usage. Overage billed at plan rate.\nCustom fields: Settings > Integrations > [name] > Field Mapping > Add Custom Field\n\n## SECURITY\n\nEncryption:\n- All data: TLS 1.3 in transit (all plans), AES-256 at rest (all plans)\n- Automatic, no configuration needed\n\nCertifications:\n- SOC 2 Type II: Certified. Full report available under NDA \u2014 email security@nexusintegrations.com\n- ISO 27001: Pursuing certification (expected Q3 2025); practices align with standard\n- GDPR: Fully compliant. DPA available. Right to erasure honored within 30 days (privacy@nexusintegrations.com)\n- HIPAA: Enterprise only. BAA available. Contact security@nexusintegrations.com\n- PCI DSS: Not applicable \u2014 Nexus doesn't process/store card data; payments via Stripe (PCI Level 1)\n\nAccess controls:\n- 2FA: Available all plans; org-wide enforcement = Enterprise\n- SSO (SAML 2.0): Enterprise only \u2014 supports Okta, Azure AD, Google Workspace, others\n- RBAC: Basic roles (Admin/Member/Viewer) all plans; custom roles = Enterprise\n- IP whitelisting: Enterprise only\n\nData retention:\n- Active integration data retained while active\n- After deletion: 30 days then permanently deleted\n- After account cancellation: accessible 30 days, then deleted\n- Starter/Professional: 90-day log retention | Enterprise: Configurable\n\nData residency:\n- Default: US-East (Virginia) + US-West (Oregon)\n- EU (Frankfurt) + APAC (Singapore): Enterprise only\n\nData access: Only authorized Nexus engineers with business need. All access logged. Data never sold/shared.\nAudit logs: Basic (login events, integration changes) all plans. Comprehensive (API calls, data access, admin actions) = Enterprise.\n\nPen testing: Annual third-party tests\n\n## SUPPORT & CONTACTS\n\n- General support: support@nexusintegrations.com (reply within 48h Starter, 24h Pro, 4h Enterprise)\n- Sales (enterprise/partnerships): sales@nexusintegrations.com\n- Security/compliance: security@nexusintegrations.com\n- Billing/invoices: billing@nexusintegrations.com\n- Legal/DPA/contracts: legal@nexusintegrations.com\n- Privacy/data deletion: privacy@nexusintegrations.com\n- Jobs/HR: people@nexusintegrations.com\n- Docs: docs.nexusintegrations.com/quickstart\n- API docs: docs.nexusintegrations.com/api\n- Community: community.nexusintegrations.com\n- Tutorials: nexusintegrations.com/tutorials`;\n\nconst ESCALATION_TEMPLATES = {\n  escalate_sales: `Thank you for reaching out to Nexus Integrations. Your inquiry has been forwarded to our sales team at sales@nexusintegrations.com. They specialize in enterprise solutions, partnerships, and large-scale deployments and will follow up within one business day.`,\n  escalate_support: `Thank you for contacting Nexus Integrations. Your request has been escalated to our technical support team at support@nexusintegrations.com. A specialist will respond within 24 hours.`,\n  escalate_finance: `Thank you for reaching out about your billing. Your inquiry has been forwarded to our billing team at billing@nexusintegrations.com. They will respond within one business day.`,\n  escalate_legal: `Thank you for your inquiry. Your request has been forwarded to our legal team at legal@nexusintegrations.com. They handle DPAs, security agreements, and legal contracts, and will respond within 2 business days.`,\n  hr: `Thank you for your interest in joining Nexus Integrations! Your message has been forwarded to our People team at people@nexusintegrations.com. They will be in touch if there is a good match.`,\n  spam: `Thank you for your message.`,\n  misdirected: `It looks like this email may have been intended for a different organization. You have reached Nexus Integrations (nexusintegrations.com), a B2B data integration platform. If you meant to contact us, please let us know how we can help. Otherwise, you may want to resend your message to the intended recipient.`\n};\n\nconst ANSWERABLE = ['setup', 'pricing', 'security'];\n\nlet userMessage;\n\nif (ANSWERABLE.includes(category)) {\n  userMessage = `You are a customer support agent for Nexus Integrations. Answer ONLY using the documentation provided below. Be specific, accurate, and helpful. Never mention competitors. Never invent information not in the docs. Keep replies professional and concise (2-4 paragraphs max).\n\nNEXUS INTEGRATIONS DOCUMENTATION:\n${NEXUS_DOCS}\n\n---\nEmail to answer:\nFrom: ${from}\nSubject: ${subject}\nBody: ${body}\n\nCategory: ${category}\n\nWrite a helpful reply grounded in the documentation above.`;\n} else {\n  // Use template for escalations, HR, spam, misdirected\n  const template = ESCALATION_TEMPLATES[category] || ESCALATION_TEMPLATES.escalate_support;\n  userMessage = `You are a customer support agent for Nexus Integrations. Use the template below as your reply, but adjust the opening line to acknowledge the customer's specific topic naturally. Keep it brief and professional.\n\nTEMPLATE: ${template}\n\nEmail context:\nFrom: ${from}\nSubject: ${subject}\nBody: ${body}\n\nWrite the reply using the template above.`;\n}\n\nreturn [{json: {...$json, userMessage}}];\n"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567809",
+      "name": "Build Reply Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567810",
+      "name": "Draft Reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1440,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-opus-4-6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokensToSample": 1024
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567811",
+      "name": "Claude - Draft",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        1440,
+        360
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "oRm3uluDgjQ19V1D",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $json.text || $json.output || '';\nconst prevData = $('Build Reply Prompt').item.json;\n\nlet draft_reply = '';\ntry {\n  const cleaned = responseText.replace(/```json\\n?/gi, '').replace(/```\\n?/gi, '').trim();\n  const parsed = JSON.parse(cleaned);\n  draft_reply = parsed.draft_reply || '';\n} catch (e) {\n  const match = responseText.match(/\"draft_reply\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"/s);\n  if (match) {\n    draft_reply = match[1].replace(/\\\\n/g, '\\n').replace(/\\\\\"/g, '\"');\n  } else {\n    draft_reply = responseText.trim();\n  }\n}\n\nif (!draft_reply || draft_reply.trim().length === 0) {\n  draft_reply = 'Thank you for contacting Nexus Integrations. Our team will review your message and respond shortly.';\n}\n\nreturn {\n  json: {\n    from: prevData.from,\n    subject: prevData.subject,\n    body: prevData.body,\n    isEvaluation: prevData.isEvaluation,\n    expected_category: prevData.expected_category || '',\n    category: prevData.category,\n    draft_reply\n  }\n};"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567812",
+      "name": "Parse Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-iseval",
+              "leftValue": "={{ $json.isEvaluation }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567813",
+      "name": "Route by Mode",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({category: $json.category, draft_reply: $json.draft_reply}) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567814",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const category = $json.category || '';\nconst draft_reply = $json.draft_reply || '';\nconst expected_category = $json.expected_category || '';\nconst from = $json.from || '';\nconst subject = $json.subject || '';\nconst body = $json.body || '';\nconst match = category === expected_category ? 'YES' : 'NO';\n\nconst userMessage = `Expected Category: ${expected_category}\nActual Category: ${category}\nCategory Match: ${match}\n\nOriginal Email:\nFrom: ${from}\nSubject: ${subject}\nBody: ${body}\n\nDraft Reply:\n${draft_reply}\n\nScore this response. If Category Match is NO, score must be 0.\nRespond ONLY with valid JSON: {\"score\":1,\"reason\":\"one sentence\"} or {\"score\":0,\"reason\":\"one sentence\"}`;\n\nreturn { json: { ...$json, userMessage } };"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567815",
+      "name": "Build Score Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567816",
+      "name": "Score Response",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        2400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-opus-4-6",
+          "mode": "id"
+        },
+        "options": {
+          "temperature": 0,
+          "maxTokensToSample": 256
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567817",
+      "name": "Claude - Score",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        2400,
+        540
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "oRm3uluDgjQ19V1D",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $json.text || $json.output || '';\nconst prevData = $('Build Score Prompt').item.json;\n\nlet score = 0;\nlet reason = 'Could not parse score response';\n\ntry {\n  const cleaned = responseText.replace(/```json\\n?/gi, '').replace(/```\\n?/gi, '').trim();\n  const parsed = JSON.parse(cleaned);\n  score = (parsed.score === 1 || parsed.score === '1' || parsed.score === true) ? 1 : 0;\n  reason = parsed.reason || '';\n} catch (e) {\n  const scoreMatch = responseText.match(/\"score\"\\s*:\\s*(\\d)/);\n  const reasonMatch = responseText.match(/\"reason\"\\s*:\\s*\"([^\"]+)\"/);\n  if (scoreMatch) score = parseInt(scoreMatch[1], 10) === 1 ? 1 : 0;\n  if (reasonMatch) reason = reasonMatch[1];\n}\n\nconst expected = (prevData.expected_category || '').toLowerCase().trim();\nconst actual = (prevData.category || '').toLowerCase().trim();\nif (expected && actual !== expected) {\n  score = 0;\n  reason = `Category mismatch: expected '${expected}', got '${actual}'. ${reason}`;\n}\n\nif (score !== 0 && score !== 1) score = 0;\n\nreturn { json: { ...prevData, score, reason } };"
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567818",
+      "name": "Parse Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "metrics": {
+          "metricValues": [
+            {
+              "name": "score",
+              "value": "={{ $json.score }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567819",
+      "name": "Record Score",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        300
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "body": {
+            "from": "sarah.mitchell@brighthorizonltd.com",
+            "subject": "Help connecting Salesforce",
+            "body": "Hi there,\n\nI just signed up for Nexus and I'm trying to connect our Salesforce account. When I click \"Connect Salesforce\" it redirects me to login, but then I get an error saying \"Authentication Failed\".\n\nI'm using my admin credentials and I'm sure the password is correct. Is there something else I need to enable in Salesforce first?\n\nThanks,\nSarah Mitchell\nBright Horizon Consulting"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set - Prod Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluation Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Eval Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Prod Input": {
+      "main": [
+        [
+          {
+            "node": "Build Classify Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Eval Input": {
+      "main": [
+        [
+          {
+            "node": "Build Classify Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classify Prompt": {
+      "main": [
+        [
+          {
+            "node": "Classify Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Classify": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Category": {
+      "main": [
+        [
+          {
+            "node": "Build Reply Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reply Prompt": {
+      "main": [
+        [
+          {
+            "node": "Draft Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Reply": {
+      "main": [
+        [
+          {
+            "node": "Parse Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Draft": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Draft Reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reply": {
+      "main": [
+        [
+          {
+            "node": "Route by Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Mode": {
+      "main": [
+        [
+          {
+            "node": "Build Score Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Score Prompt": {
+      "main": [
+        [
+          {
+            "node": "Score Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Response": {
+      "main": [
+        [
+          {
+            "node": "Parse Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude - Score": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Score Response",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Score": {
+      "main": [
+        [
+          {
+            "node": "Record Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "cb484ba7b742928a2048bf8829668bed5b5ad9787579adea888f05980292a4a7"
+  },
+  "tags": []
+}

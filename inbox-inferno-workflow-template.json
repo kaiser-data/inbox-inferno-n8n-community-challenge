@@ -1,0 +1,294 @@
+{
+  "name": "Monthly Challenge - Inbox Inferno (Guided)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbox-inferno",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "de1bedd9-a06e-4249-af09-7480fc2d6bd0",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        880
+      ],
+      "webhookId": "inbox-inferno"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Step 1 — Classify the email\n// Decide how to categorize the incoming email.\n// You could use an AI model, keyword matching, or any other approach.\n//\n// Input available:\n//   $json.from    — sender email address\n//   $json.subject — email subject line\n//   $json.body    — full email body text\n//\n// Categories to choose from:\n//   pricing, setup, security, hr,\n//   escalate_sales, escalate_support, escalate_legal,\n//   spam, misdirected\n//\n// Output: pass the category forward for the next steps.\n\nconst email = {\n  from: $json.from,\n  subject: $json.subject,\n  body: $json.body,\n};\n\n// Replace this with your classification logic\nconst category = 'unknown';\n\nreturn { json: { ...email, category } };"
+      },
+      "id": "b93782ac-f591-459d-b2c0-c0d23769d522",
+      "name": "Classify Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Step 2 — Look up relevant documentation\n// Based on the category, retrieve the right Nexus docs to ground your reply.\n//\n// You might:\n//   - Use a vector store / embeddings for semantic search\n//   - Use a simple lookup table mapping category → doc content\n//   - Call an external knowledge base\n//   - Use an AI Tool node with retrieval\n//\n// The key rule: replies MUST be grounded in Nexus documentation.\n// No made-up information allowed.\n//\n// Available docs (load these however you prefer):\n//   - Pricing Quick Reference & Full Pricing\n//   - Internal Escalation Policy\n//   - Security & Compliance Guidelines\n//   - Product Integration Guide\n//   - Customer & Prospect List\n\nconst category = $json.category;\nconst context = ''; // Replace with actual doc content\n\nreturn { json: { ...$json, context } };"
+      },
+      "id": "a676c1f3-4995-4da2-a869-683fd0ff97fb",
+      "name": "Lookup Docs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Step 3 — Draft the reply\n// Use the category + retrieved documentation to write a response.\n//\n// You could:\n//   - Use an AI model (Claude, GPT, etc.) to generate the reply\n//   - Use templates for common categories\n//   - Combine both approaches\n//\n// Important:\n//   - Reply must be grounded in the documentation (no hallucinations)\n//   - If the agent can't answer confidently, escalate to a human\n//   - Tone should be professional and helpful\n//   - For escalation categories, draft a polite handoff message\n//\n// Output must include both fields:\n//   { category: '...', draft_reply: '...' }\n\nconst category = $json.category;\nconst context = $json.context;\n\n// Replace with your draft logic\nconst draft_reply = '';\n\nreturn { json: { category, draft_reply } };"
+      },
+      "id": "26411eb3-00e3-44b8-b871-65c72fd11507",
+      "name": "Draft Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2048,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ category: $json.category || 'unknown', draft_reply: $json.draft_reply || '' }) }}",
+        "options": {}
+      },
+      "id": "061758e5-3c52-4eba-8914-aeb9263992c3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2560,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Step 5 — Score the response\n// Use an LLM-as-judge to evaluate each agent response.\n//\n// For each test email, compare:\n//   - Was the category correct?\n//   - Is the reply grounded in documentation?\n//   - Did it escalate when it should have?\n//\n// Score: 1 (pass) or 0 (fail)\n//\n// Consider using an AI node here with a scoring prompt like:\n//   \"Given the email, expected category, actual category, and draft reply,\n//    score 1 if correct and grounded, 0 if not.\"\n\nreturn { json: { score: 0, reason: 'Not yet implemented' } };"
+      },
+      "id": "96706790-2e4d-47b5-9f53-1e00368def98",
+      "name": "Score Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📨 Inbox Inferno - Monthly Challenge\n\n**Goal:** Build an AI agent that classifies incoming emails and drafts replies grounded in Nexus Integrations' documentation.\n\n**Deadline:** March 24, 2026\n\n---\n\n### Webhook Input (POST body)\n```json\n{\n  \"from\": \"sarah.mitchell@brighthorizonltd.com\",\n  \"subject\": \"Help connecting Salesforce\",\n  \"body\": \"Hi there, I just signed up for Nexus and...\"\n}\n```\n\n### Expected Output\n```json\n{\n  \"category\": \"setup\",\n  \"draft_reply\": \"Hi Sarah, ...\"\n}\n```\n\n### Categories\n`pricing` · `setup` · `security` · `hr` · `escalate_sales` · `escalate_support` · `escalate_legal` · `spam` · `misdirected`",
+        "height": 770,
+        "width": 532,
+        "color": 5
+      },
+      "id": "cdefe833-a689-40ba-b9cb-e9b168c385eb",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ① Classify\nDetermine email category.\n\nReplace this Code node with your own approach — AI model, Switch node, or anything else.",
+        "height": 192,
+        "width": 232,
+        "color": 3
+      },
+      "id": "fc172bab-16e2-4d2c-a451-158302fdb1db",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ② Lookup Docs\nRetrieve relevant Nexus documentation for the reply.\n\nReplace with vector store, lookup table, or tool retrieval.",
+        "height": 192,
+        "width": 226,
+        "color": 3
+      },
+      "id": "979d9851-61d9-4625-a0c2-67fa57d6ceb4",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ③ Draft Reply\nGenerate a grounded response using the docs.\n\nReplace with AI generation, templates, or a mix.",
+        "height": 192,
+        "width": 226,
+        "color": 3
+      },
+      "id": "e814cebf-7b18-4598-a9b3-3e0adef07bc3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Evaluation Flow\n\nThis is separate from the main agent. Use the **Evaluation Trigger** to run your test suite.\n\nThe flow: Load test emails → Send each through your agent → Score with LLM judge → Track results.\n\n**Tip:** You can swap the Code nodes below for any approach — AI nodes, HTTP requests to your own webhook, etc.",
+        "height": 256,
+        "width": 560,
+        "color": 6
+      },
+      "id": "b937de72-b4b9-45cb-82af-a1c52d2a7a08",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 💡 Tips\n\n- **Don't over-engineer** — start simple, iterate\n- **Test early** — use the pinned data on the Webhook to test without real requests\n- **Read the escalation policy** — some emails should NOT be auto-answered\n- **The Code nodes are placeholders** — replace them with AI Agent nodes, Switch nodes, HTTP nodes, or whatever works for you\n- **Submit:** webhook URL + JSON export + 60s demo video",
+        "height": 310,
+        "width": 340,
+        "color": 2
+      },
+      "id": "41082e61-0f75-4ad9-9a0a-877033acf4d4",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "checkIfEvaluating"
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        2272,
+        880
+      ],
+      "id": "9ff8a19b-7379-45f0-84e4-5ab355191eeb",
+      "name": "Evaluation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Step 4 — Load test emails\n// Load your test dataset here. The 20 sample emails are provided separately.\n//\n// Options:\n//   - Store them in an n8n Data Table and query here\n//   - Load from a Google Sheet\n//   - Hardcode them as JSON (not recommended for maintainability)\n//\n// Each test email should have:\n//   { from, subject, body, expected_category }\n//\n// This node should output one item per test email.\n\nreturn [{ json: { message: 'Load your test emails here' } }];"
+      },
+      "id": "584fd1e9-d290-4902-9397-e5862a722996",
+      "name": "Load Test Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        2560,
+        1120
+      ],
+      "id": "0b0015d3-cd62-41ed-95e9-c9ff95869b9e",
+      "name": "Evaluation1"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "from": "sarah.mitchell@brighthorizonltd.com",
+          "subject": "Help connecting Salesforce",
+          "body": "Hi there,\n\nI just signed up for Nexus and I'm trying to connect our Salesforce account. When I click \"Connect Salesforce\" it redirects me to login, but then I get an error saying \"Authentication Failed\".\n\nI'm using my admin credentials and I'm sure the password is correct. Is there something else I need to enable in Salesforce first?\n\nThanks,\nSarah Mitchell\nBright Horizon Consulting"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Email": {
+      "main": [
+        [
+          {
+            "node": "Lookup Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Docs": {
+      "main": [
+        [
+          {
+            "node": "Draft Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Reply": {
+      "main": [
+        [
+          {
+            "node": "Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "947c43f7-f7aa-4c43-b9ae-568e6f549f30",
+  "meta": {
+    "instanceId": "cb484ba7b742928a2048bf8829668bed5b5ad9787579adea888f05980292a4a7"
+  },
+  "id": "LD5GvfiwYrlQYpxv",
+  "tags": []
+}
