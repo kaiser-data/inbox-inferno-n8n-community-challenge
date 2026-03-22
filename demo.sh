@@ -2,7 +2,7 @@
 # Inbox Inferno - Demo Script
 # Usage: bash demo.sh [1|2|3|4]  or just  bash demo.sh  for all
 
-WEBHOOK="https://kaiser-data.app.n8n.cloud/webhook/inbox-inferno"
+WEBHOOK="${N8N_WEBHOOK_URL:-https://your-instance.app.n8n.cloud/webhook/inbox-inferno}"
 
 run_test() {
   local label="$1"
